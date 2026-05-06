@@ -1,26 +1,612 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mansaf Quest 2D</title>
-    <style>
-        body { margin: 0; padding: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        canvas { border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        /* Font for the speech bubble */
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap');
-        @font-face {
-            font-family: 'PixelArabic';
-            src: url('https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap'); /* Fallback for pixel style */
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Mansaf Quest 2D</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Cairo',sans-serif}
+#gameCanvas{border:3px solid #e94560;border-radius:8px;box-shadow:0 0 30px rgba(233,69,96,0.4);image-rendering:pixelated}
+#startScreen,#gameOverScreen,#winScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10;color:#fff;text-align:center}
+#startScreen h1{font-size:3em;color:#e94560;text-shadow:0 0 20px #e94560;margin-bottom:10px}
+#startScreen h2{font-size:1.2em;color:#ffd700;margin-bottom:30px}
+.btn{padding:15px 40px;font-size:1.3em;font-family:'Cairo';background:linear-gradient(135deg,#e94560,#c23152);color:#fff;border:none;border-radius:12px;cursor:pointer;margin:5px;transition:transform 0.2s}
+.btn:hover{transform:scale(1.1)}
+.hidden{display:none!important}
+#mobileControls{position:fixed;bottom:10px;left:0;width:100%;display:none;justify-content:space-between;padding:0 20px;z-index:5}
+.mBtn{width:70px;height:70px;border-radius:50%;background:rgba(233,69,96,0.5);border:2px solid #e94560;color:#fff;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+@media(max-width:800px){#mobileControls{display:flex!important}}
+</style>
 </head>
 <body>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script src="src/GameState.js"></script>
-    <script src="src/scenes/BootScene.js"></script>
-    <script src="src/scenes/LevelScene.js"></script>
-    <script src="src/scenes/UIScene.js"></script>
-    <script src="src/main.js"></script>
+
+<div id="startScreen">
+  <h1>🇯🇴 Mansaf Quest</h1>
+  <h2>اجمع مقادير المنسف قبل ما تجوع!</h2>
+  <p style="color:#aaa;margin-bottom:20px">رز • جميد • لبن • لحمة</p>
+  <button class="btn" onclick="startGame()">ابدأ اللعب 🎮</button>
+  <p style="color:#777;margin-top:40px;font-size:0.9em">تطوير Ahmad AL Batayneh</p>
+</div>
+
+<div id="gameOverScreen" class="hidden">
+  <h1 style="font-size:2.5em;color:#e94560">💀 Game Over</h1>
+  <p id="goLevel" style="color:#aaa;font-size:1.2em;margin:15px 0"></p>
+  <button class="btn" onclick="startGame()">حاول مرة ثانية</button>
+</div>
+
+<div id="winScreen" class="hidden">
+  <h1 style="font-size:2.5em;color:#ffd700">🎉 مبروك!</h1>
+  <p style="color:#fff;font-size:1.3em;margin:15px 0">جمعت كل مقادير المنسف! صحتين وعافية 🍲</p>
+  <button class="btn" onclick="startGame()">العب مرة ثانية</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="mobileControls">
+  <button class="mBtn" id="btnLeft">◀</button>
+  <button class="mBtn" id="btnJump">▲</button>
+  <button class="mBtn" id="btnRight">▶</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Responsive sizing
+function resize(){
+  const s = Math.min(window.innerWidth/800, window.innerHeight/600, 1);
+  canvas.width = 800; canvas.height = 600;
+  canvas.style.width = (800*s)+'px'; canvas.style.height = (600*s)+'px';
+}
+resize(); window.addEventListener('resize', resize);
+
+// ========== GAME STATE ==========
+let GS = {};
+function resetGS(){
+  GS = {
+    lives:3, falafelCount:0, level:1, running:false,
+    ingredients:{Jameed:0, Meat:0, Rice:0, Laban:0},
+    starvingTriggered:false, bubbleAlpha:0, bubbleDir:1
+  };
+}
+resetGS();
+
+const INGREDIENT_MAP = ['Jameed','Jameed','Jameed','Jameed','Meat','Meat','Meat','Meat','Rice','Rice','Rice','Rice','Laban','Laban','Laban','Laban'];
+const INGREDIENT_COLORS = {Jameed:'#c8b560',Meat:'#d4513a',Rice:'#f5f5dc',Laban:'#e8e8e8'};
+const INGREDIENT_NAMES = {Jameed:'جميد',Meat:'لحمة',Rice:'رز',Laban:'لبن'};
+const BG_COLORS = ['#2c3e6b','#2c3e6b','#2c3e6b','#2c3e6b','#4a3728','#4a3728','#4a3728','#4a3728','#8b4513','#8b4513','#8b4513','#8b4513','#654321','#654321','#654321','#654321'];
+
+// ========== LEVEL DATA ==========
+let player, platforms, falafels, obstacles, majorItem, door, camera, lavaPits, lasers;
+let invulnTimer = 0;
+
+function buildLevel(){
+  camera = {x:0};
+  const W = 3200, G = 570;
+
+  player = {x:60,y:G-48,w:28,h:44,vx:0,vy:0,onGround:false,facing:1,frame:0,frameT:0};
+
+  // Ground is solid, some floating platforms move
+  platforms = [{x:0,y:G,w:W,h:30,passThru:false,moving:false,vx:0,originX:0}];
+  for(let i=0;i<12;i++){
+    const px=200+i*250, isMoving=(i%3===0); // only every 3rd platform moves
+    const spd=isMoving?(20+Math.random()*40):0;
+    // Lowered platform height to be reachable by the player
+    platforms.push({x:px,y:G-60-Math.random()*80,w:100+Math.random()*60,h:16,passThru:false,moving:isMoving,vx:spd*(i%2===0?1:-1),originX:px,range:60+Math.random()*60});
+  }
+
+  // Lava pits (gaps in ground)
+  lavaPits = [];
+  const pitCount = 1 + Math.floor(GS.level/3);
+  for(let i=0;i<pitCount;i++){
+    const px = 500 + i * 600 + Math.random()*200;
+    lavaPits.push({x:px, w:80+Math.random()*40, bubbles:[]});
+    // Init lava bubbles
+    for(let b=0;b<5;b++){
+      lavaPits[i].bubbles.push({rx:Math.random(), ry:Math.random(), s:2+Math.random()*3, sp:0.5+Math.random()});
+    }
+  }
+
+  // Falafels: 10 in even levels, 12 in odd levels. Half on ground, half on platforms
+  falafels = [];
+  const totalFalafel = GS.level % 2 === 0 ? 10 : 12;
+  const onGround = Math.floor(totalFalafel / 2);
+  const onPlat = totalFalafel - onGround;
+  const G2 = 570;
+  // Ground falafels - spread across the level
+  for(let i=0;i<onGround;i++){
+    let fx = 150+i*(2800/onGround)+Math.random()*80;
+    // Check if it's inside a lava pit, if so, move it
+    for(const pit of lavaPits) {
+      if(fx > pit.x - 20 && fx < pit.x + pit.w + 20) {
+        fx = pit.x - 30; // Move before the pit
+      }
+    }
+    falafels.push({x:fx, y:G2-25, w:16, h:16, alive:true});
+  }
+  // Platform falafels
+  for(let i=0;i<onPlat;i++){
+    let px = platforms[1+i%(platforms.length-1)];
+    falafels.push({x:px.x+px.w/2+Math.random()*30-15, y:px.y-25, w:16, h:16, alive:true});
+  }
+
+  // Enemies (some shoot lasers)
+  obstacles = []; lasers = [];
+  const obsCount = 2 + Math.min(GS.level, 6);
+  for(let i=0;i<obsCount;i++){
+    const shoots = i % 2 === 0; // every other enemy shoots
+    obstacles.push({
+      x:400+i*(3200/(obsCount+1)), y:570-30, w:30, h:30,
+      vx:(Math.random()>0.5?1:-1)*(1+GS.level*0.3), type:Math.floor(Math.random()*3),
+      alive:true, shoots:shoots, shootTimer:4+Math.random()*1.5
+    });
+  }
+
+  majorItem = {x:2800, y:570-60, w:32, h:32, alive:true, visible:false};
+  door = {x:3100, y:570-70, w:50, h:70};
+}
+
+// ========== INPUT ==========
+const keys = {};
+window.addEventListener('keydown', e=>{keys[e.code]=true; e.preventDefault()});
+window.addEventListener('keyup', e=>{keys[e.code]=false});
+
+// Mobile
+const mL=document.getElementById('btnLeft'), mR=document.getElementById('btnRight'), mJ=document.getElementById('btnJump');
+let mLeft=false,mRight=false,mJump=false;
+function mTouch(el,key,cb){
+  el.addEventListener('touchstart',e=>{e.preventDefault();cb(true)},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();cb(false)},{passive:false});
+}
+mTouch(mL,'l',v=>mLeft=v); mTouch(mR,'r',v=>mRight=v); mTouch(mJ,'j',v=>mJump=v);
+
+// ========== DRAW HELPERS ==========
+function drawPixelChar(x,y,w,h,starving){
+  // Body (jacket)
+  ctx.fillStyle = starving ? '#cc7a00' : '#1e6fbf';
+  ctx.fillRect(x,y+12,w,h-24);
+  // Jeans
+  ctx.fillStyle = '#2a4a7f';
+  ctx.fillRect(x+2,y+h-16,w/2-3,16);
+  ctx.fillRect(x+w/2+1,y+h-16,w/2-3,16);
+  // Head
+  ctx.fillStyle = '#deb887';
+  ctx.fillRect(x+4,y,w-8,14);
+  // Shemagh
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x+2,y-4,w-4,8);
+  ctx.fillStyle = '#e94560';
+  for(let i=0;i<3;i++) ctx.fillRect(x+4+i*8,y-4,4,8);
+  // Eyes
+  ctx.fillStyle = '#000';
+  const eyeS = starving ? 4 : 3;
+  ctx.fillRect(x+8,y+4,eyeS,eyeS);
+  ctx.fillRect(x+w-8-eyeS,y+4,eyeS,eyeS);
+  if(starving){
+    ctx.fillStyle='#4af';
+    ctx.fillRect(x+10,y+10,2,3); // sweat
+  }
+}
+
+function drawFalafel(x,y){
+  ctx.fillStyle='#d4a017';
+  ctx.beginPath(); ctx.arc(x+8,y+8,8,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#b8860b';
+  ctx.fillRect(x+4,y+4,3,3);
+  ctx.fillRect(x+10,y+9,3,3);
+}
+
+function drawIngredient(x,y,type){
+  ctx.fillStyle = INGREDIENT_COLORS[type];
+  ctx.fillRect(x,y,32,32);
+  ctx.strokeStyle='#ffd700'; ctx.lineWidth=2;
+  ctx.strokeRect(x,y,32,32);
+  ctx.fillStyle='#000'; ctx.font='10px Cairo';
+  ctx.textAlign='center';
+  ctx.fillText(INGREDIENT_NAMES[type],x+16,y+20);
+}
+
+function drawObstacle(o){
+  if(!o.alive)return;
+  const cols = ['#333','#8b0000','#555'];
+  ctx.fillStyle = cols[o.type];
+  ctx.fillRect(o.x-camera.x,o.y,o.w,o.h);
+  ctx.fillStyle='#ff6';ctx.font='8px monospace';ctx.textAlign='center';
+  const labels=['🕳️','☕','💨'];
+  ctx.fillText(labels[o.type],o.x-camera.x+o.w/2,o.y+o.h/2+3);
+  // Laser indicator
+  if(o.shoots){
+    ctx.fillStyle='#f00'; ctx.fillRect(o.x-camera.x+12,o.y-4,6,4);
+  }
+}
+
+function drawLaser(l){
+  ctx.fillStyle='rgba(255,0,0,0.9)';
+  ctx.fillRect(l.x-camera.x,l.y,l.w,l.h);
+  ctx.fillStyle='rgba(255,100,100,0.6)';
+  ctx.fillRect(l.x-camera.x,l.y+1,l.w,l.h-2);
+}
+
+function drawLavaPit(pit){
+  const px=pit.x-camera.x, G=570;
+  // Lava body
+  const grad=ctx.createLinearGradient(0,G,0,G+30);
+  grad.addColorStop(0,'#ff4500'); grad.addColorStop(0.5,'#ff6600'); grad.addColorStop(1,'#cc3300');
+  ctx.fillStyle=grad;
+  ctx.fillRect(px,G,pit.w,30);
+  // Bubbles
+  for(const b of pit.bubbles){
+    ctx.fillStyle='rgba(255,200,0,0.7)';
+    ctx.beginPath();
+    ctx.arc(px+b.rx*pit.w, G+5+b.ry*15, b.s, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Glow
+  ctx.fillStyle='rgba(255,69,0,0.15)';
+  ctx.fillRect(px-5,G-20,pit.w+10,20);
+}
+
+// ========== GAME LOGIC ==========
+function updatePlayer(dt){
+  // Super Mario physics
+  const spd=300, jmp=-750, grav=1800;
+
+  // Input
+  if(keys['ArrowLeft']||keys['KeyA']||mLeft){player.vx=-spd;player.facing=-1;}
+  else if(keys['ArrowRight']||keys['KeyD']||mRight){player.vx=spd;player.facing=1;}
+  else player.vx=0;
+
+  if((keys['ArrowUp']||keys['KeyW']||keys['Space']||mJump)&&player.onGround){
+    player.vy=jmp; player.onGround=false;
+  } else if (!(keys['ArrowUp']||keys['KeyW']||keys['Space']||mJump) && player.vy < -300) {
+    // Variable jump height (release button early to cut jump short)
+    player.vy = -300;
+  }
+
+  player.vy+=grav*dt;
+
+  // Move X first, then resolve X collisions
+  player.x+=player.vx*dt;
+  for(const p of platforms){
+    if(player.x+player.w>p.x && player.x<p.x+p.w &&
+       player.y+player.h>p.y+2 && player.y<p.y+p.h-2){
+      if(player.vx>0) player.x=p.x-player.w;
+      else if(player.vx<0) player.x=p.x+p.w;
+      player.vx=0;
+    }
+  }
+
+  // Move Y, then resolve Y collisions
+  player.y+=player.vy*dt;
+  player.onGround=false;
+  for(const p of platforms){
+    if(player.x+player.w>p.x && player.x<p.x+p.w &&
+       player.y+player.h>p.y && player.y<p.y+p.h){
+      if(player.vy>0){
+        // Landing on top
+        player.y=p.y-player.h;
+        player.vy=0;
+        player.onGround=true;
+      } else if(player.vy<0){
+        // Hitting from below
+        player.y=p.y+p.h;
+        player.vy=0;
+      }
+    }
+  }
+
+  // Lava pit collision
+  for(const pit of lavaPits){
+    if(player.x+player.w>pit.x && player.x<pit.x+pit.w && player.y+player.h>568){
+      loseLife(); invulnTimer=1.5;
+      player.x=Math.max(60,pit.x-60); player.y=400; player.vy=-400;
+    }
+  }
+
+  // Boundaries
+  if(player.x<0)player.x=0;
+  if(player.y>600){loseLife();player.x=60;player.y=400;player.vy=0;}
+
+  // Camera
+  camera.x = Math.max(0,Math.min(player.x-350, 3200-800));
+
+  // Animation frame
+  if(player.vx!==0){player.frameT+=dt;if(player.frameT>0.15){player.frame=(player.frame+1)%4;player.frameT=0;}}
+  else player.frame=0;
+}
+
+function checkCollisions(){
+  // Falafels
+  for(const f of falafels){
+    if(!f.alive)continue;
+    if(player.x+player.w>f.x&&player.x<f.x+f.w&&player.y+player.h>f.y&&player.y<f.y+f.h){
+      f.alive=false; GS.falafelCount++;
+      if(GS.falafelCount>=10&&!majorItem.visible){majorItem.visible=true;}
+    }
+  }
+
+  // Major ingredient
+  if(majorItem.visible&&majorItem.alive){
+    if(player.x+player.w>majorItem.x&&player.x<majorItem.x+majorItem.w&&
+       player.y+player.h>majorItem.y&&player.y<majorItem.y+majorItem.h){
+      majorItem.alive=false;
+      const type=INGREDIENT_MAP[GS.level-1];
+      GS.ingredients[type]++;
+    }
+  }
+
+  // Obstacles (stomp to kill, otherwise take damage)
+  if(invulnTimer<=0){
+    for(const o of obstacles){
+      if(!o.alive)continue;
+      if(player.x+player.w>o.x&&player.x<o.x+o.w&&player.y+player.h>o.y&&player.y<o.y+o.h){
+        // Check if player is stomping (falling from above onto enemy head)
+        if(player.vy>0 && player.y+player.h < o.y+o.h/2+5){
+          o.alive=false; // Kill enemy!
+          player.vy=-350; // Bounce up
+          GS.falafelCount = Math.min(GS.falafelCount+1, 15); // Bonus falafel
+        } else {
+          loseLife();
+          invulnTimer=1.5;
+          player.vy=-300;
+          player.vx=player.facing*-200;
+        }
+        break;
+      }
+    }
+  }
+
+  // Laser collisions
+  if(invulnTimer<=0){
+    for(const l of lasers){
+      if(player.x+player.w>l.x&&player.x<l.x+l.w&&player.y+player.h>l.y&&player.y<l.y+l.h){
+        loseLife(); invulnTimer=1.5;
+        player.vy=-250;
+        break;
+      }
+    }
+  }
+
+  // Door
+  if(player.x+player.w>door.x&&player.x<door.x+door.w&&player.y+player.h>door.y&&player.y<door.y+door.h){
+    GS.level++;
+    if(GS.level>16){winGame();return;}
+    GS.falafelCount=0; GS.starvingTriggered=false;
+    GS.lives=3; // استعادة الأرواح كل مرحلة
+    buildLevel();
+  }
+}
+
+function loseLife(){
+  GS.lives--;
+  if(GS.lives<=0){gameOver();return;}
+  if(GS.lives===1&&!GS.starvingTriggered){GS.starvingTriggered=true;}
+}
+
+function updateObstacles(dt){
+  for(const o of obstacles){
+    if(!o.alive)continue;
+    o.x+=o.vx;
+    if(o.x<100||o.x>3100)o.vx*=-1;
+    // Shooting logic
+    if(o.shoots){
+      o.shootTimer-=dt;
+      if(o.shootTimer<=0){
+        o.shootTimer=4+Math.random()*1.5;
+        const dir = player.x > o.x ? 1 : -1;
+        lasers.push({x:o.x+15,y:o.y+10,w:20,h:4,vx:dir*400,life:2});
+      }
+    }
+  }
+  // Update lasers
+  for(let i=lasers.length-1;i>=0;i--){
+    lasers[i].x+=lasers[i].vx*dt;
+    lasers[i].life-=dt;
+    if(lasers[i].life<=0||lasers[i].x<0||lasers[i].x>3200) lasers.splice(i,1);
+  }
+  // Animate lava bubbles
+  for(const pit of lavaPits){
+    for(const b of pit.bubbles){
+      b.ry-=b.sp*dt;
+      if(b.ry<0){b.ry=1;b.rx=Math.random();}
+    }
+  }
+  // Move platforms
+  for(const p of platforms){
+    if(!p.moving)continue;
+    p.x+=p.vx*dt;
+    if(Math.abs(p.x-p.originX)>p.range) p.vx*=-1;
+  }
+}
+
+// ========== DRAW ==========
+function drawBG(){
+  // Sky gradient based on level zone
+  const zone = Math.floor((GS.level-1)/4);
+  const skies = [['#0f3460','#16213e'],['#4a2c17','#2c1810'],['#b7472a','#4a1a0a'],['#1a1a2e','#0a0a15']];
+  const s=skies[zone]||skies[0];
+  const grad=ctx.createLinearGradient(0,0,0,600);
+  grad.addColorStop(0,s[0]); grad.addColorStop(1,s[1]);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,800,600);
+
+  // Pixel buildings/hills
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  for(let i=0;i<15;i++){
+    const bx=(i*200-camera.x*0.3)%900-50;
+    const bh=80+Math.sin(i*2.5)*60;
+    ctx.fillRect(bx,600-bh-30,60,bh);
+    ctx.fillRect(bx+10,600-bh-50,40,20);
+  }
+}
+
+function drawHUD(){
+  ctx.save();
+  // Falafel count
+  ctx.fillStyle=GS.falafelCount>=10?'#0f0':'#fff';
+  ctx.font='bold 20px Cairo'; ctx.textAlign='left';
+  ctx.fillText(`🧆 فلافل: ${GS.falafelCount}/10`,15,30);
+
+  // Lives
+  ctx.fillStyle='#e94560';
+  ctx.fillText('❤'.repeat(GS.lives)+'🖤'.repeat(3-GS.lives),15,58);
+
+  // Level
+  ctx.fillStyle='#ffd700'; ctx.textAlign='center';
+  ctx.fillText(`مرحلة ${GS.level}/16`,400,30);
+
+  // Ingredients (top right)
+  ctx.textAlign='right'; ctx.font='16px Cairo';
+  let iy=22;
+  for(const [k,v] of Object.entries(GS.ingredients)){
+    ctx.fillStyle=v>=4?'#0f0':'#aaa';
+    ctx.fillText(`${INGREDIENT_NAMES[k]}: ${v}/4`,785,iy); iy+=22;
+  }
+
+  // Speech bubble when starving
+  if(GS.starvingTriggered&&GS.lives===1){
+    GS.bubbleAlpha+=GS.bubbleDir*0.03;
+    if(GS.bubbleAlpha>1)GS.bubbleDir=-1;
+    if(GS.bubbleAlpha<0.4)GS.bubbleDir=1;
+
+    const bx=player.x-camera.x, by=player.y-50;
+    ctx.globalAlpha=GS.bubbleAlpha;
+    ctx.fillStyle='#fffdd0';
+    ctx.strokeStyle='#e94560'; ctx.lineWidth=2;
+    const tw=200;
+    ctx.beginPath();
+    ctx.roundRect(bx-tw/2,by-30,tw,28,8);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#000'; ctx.font='bold 13px Cairo'; ctx.textAlign='center';
+    ctx.fillText('يزم علامك ودنا نتغدا!',bx,by-10);
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+
+function draw(){
+  ctx.clearRect(0,0,800,600);
+  drawBG();
+
+  const cx=camera.x;
+
+  // Lava pits (draw before ground so they appear in gaps)
+  for(const pit of lavaPits) drawLavaPit(pit);
+
+  // Platforms
+  for(const p of platforms){
+    const px=p.x-cx;
+    if(px>-200&&px<1000){
+      if(p.passThru){
+        // Solid styled floating platforms
+        ctx.fillStyle='#7a6252';
+        ctx.fillRect(px,p.y,p.w,p.h);
+        ctx.fillStyle='#9a8272';
+        ctx.fillRect(px,p.y,p.w,3);
+        ctx.fillStyle='#5a4a3a';
+        ctx.fillRect(px,p.y+p.h-2,p.w,2);
+      } else {
+        // Solid ground - but skip lava pit areas
+        ctx.fillStyle='#555';
+        // Draw ground in segments around pits
+        let sx=p.x, sw=p.w;
+        for(const pit of lavaPits){
+          if(sx<pit.x && sx+sw>pit.x){
+            ctx.fillRect(sx-cx,p.y,pit.x-sx,p.h);
+            const endPit=pit.x+pit.w;
+            if(sx+sw>endPit){
+              ctx.fillRect(endPit-cx,p.y,sx+sw-endPit,p.h);
+            }
+            sx=pit.x+pit.w; sw=p.x+p.w-sx;
+          }
+        }
+        if(sw>0) ctx.fillRect(sx-cx,p.y,sw,p.h);
+        ctx.fillStyle='#8a7a6a';
+        ctx.fillRect(p.x-cx,p.y,p.w,3);
+      }
+    }
+  }
+
+  // Falafels
+  for(const f of falafels){if(f.alive)drawFalafel(f.x-cx,f.y);}
+
+  // Major Item
+  if(majorItem.visible&&majorItem.alive){
+    drawIngredient(majorItem.x-cx,majorItem.y,INGREDIENT_MAP[GS.level-1]);
+  }
+
+  // Door
+  ctx.fillStyle='#8b4513';
+  ctx.fillRect(door.x-cx,door.y,door.w,door.h);
+  ctx.fillStyle='#ffd700';ctx.font='12px Cairo';ctx.textAlign='center';
+  ctx.fillText('🚪',door.x-cx+25,door.y+40);
+
+  // Obstacles & Lasers
+  for(const o of obstacles)drawObstacle(o);
+  for(const l of lasers)drawLaser(l);
+
+  // Player
+  const starving=GS.starvingTriggered&&GS.lives===1;
+  const px=player.x-cx, py=player.y;
+
+  if(invulnTimer>0&&Math.floor(invulnTimer*10)%2===0){
+    ctx.globalAlpha=0.3;
+  }
+
+  ctx.save();
+  if(player.facing===-1){
+    ctx.translate(px+player.w,0);
+    ctx.scale(-1,1);
+    drawPixelChar(0,py,player.w,player.h,starving);
+  } else {
+    drawPixelChar(px,py,player.w,player.h,starving);
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
+
+  // HUD
+  drawHUD();
+}
+
+// ========== GAME LOOP ==========
+let lastTime=0;
+function gameLoop(ts){
+  if(!GS.running){return;}
+  const dt=Math.min((ts-lastTime)/1000, 0.05);
+  lastTime=ts;
+
+  updatePlayer(dt);
+  updateObstacles(dt);
+  if(invulnTimer>0)invulnTimer-=dt;
+  checkCollisions();
+  draw();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ========== SCREENS ==========
+function startGame(){
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameOverScreen').classList.add('hidden');
+  document.getElementById('winScreen').classList.add('hidden');
+  resetGS();
+  GS.running=true;
+  buildLevel();
+  lastTime=performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function gameOver(){
+  GS.running=false;
+  document.getElementById('goLevel').textContent=`وصلت مرحلة ${GS.level}`;
+  document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+
+function winGame(){
+  GS.running=false;
+  document.getElementById('winScreen').classList.remove('hidden');
+}
+</script>
 </body>
 </html>

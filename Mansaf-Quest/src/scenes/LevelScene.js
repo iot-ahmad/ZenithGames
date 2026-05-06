@@ -4,6 +4,7 @@ class LevelScene extends Phaser.Scene {
     }
 
     create() {
+        this.scene.launch('UIScene');
         this.cameras.main.setBounds(0, 0, 3200, 600);
         this.physics.world.setBounds(0, 0, 3200, 600);
 
