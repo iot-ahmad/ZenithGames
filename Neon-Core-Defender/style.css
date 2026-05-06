@@ -1,0 +1,171 @@
+:root {
+    --bg-color: #050508;
+    --core-color: #00ffff;
+    --shield-color: #ff00ff;
+    --enemy-color: #ff0055;
+    --text-color: #ffffff;
+    --glass-bg: rgba(10, 10, 20, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    touch-action: none;
+}
+
+#game-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none; /* Let clicks pass through to canvas when playing */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#score-display {
+    position: absolute;
+    top: 30px;
+    font-size: 3rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    letter-spacing: 2px;
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    pointer-events: auto; /* Re-enable clicks for menus */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    transform: scale(1);
+    opacity: 1;
+}
+
+.glass-panel.hidden {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--core-color);
+    text-shadow: 0 0 15px var(--core-color), 0 0 30px var(--core-color);
+    margin-bottom: 5px;
+    letter-spacing: 4px;
+}
+
+h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--shield-color);
+    text-shadow: 0 0 10px var(--shield-color), 0 0 20px var(--shield-color);
+    margin-bottom: 20px;
+    letter-spacing: 8px;
+}
+
+p {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 10px;
+}
+
+.controls-hint {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.score-container {
+    margin: 20px 0 30px 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.score-container p {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #fff;
+}
+
+.score-container span {
+    color: var(--core-color);
+    text-shadow: 0 0 10px var(--core-color);
+}
+
+.neon-button {
+    background: transparent;
+    color: #fff;
+    border: 2px solid var(--core-color);
+    border-radius: 50px;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2), inset 0 0 10px rgba(0, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.neon-button:hover {
+    background: var(--core-color);
+    color: #000;
+    box-shadow: 0 0 20px var(--core-color), 0 0 40px var(--core-color);
+}
+
+.neon-button:active {
+    transform: scale(0.95);
+}
+
+#game-over-screen h1 {
+    color: var(--enemy-color);
+    text-shadow: 0 0 15px var(--enemy-color), 0 0 30px var(--enemy-color);
+}
+
+#restart-btn {
+    border-color: var(--shield-color);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.2), inset 0 0 10px rgba(255, 0, 255, 0.2);
+}
+
+#restart-btn:hover {
+    background: var(--shield-color);
+    box-shadow: 0 0 20px var(--shield-color), 0 0 40px var(--shield-color);
+}

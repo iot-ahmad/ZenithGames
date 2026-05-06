@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@700&display=swap");
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+canvas {
+	display: block;
+	cursor: crosshair;
+	overflow: none;
+}
+
+.footer {
+	position: fixed;
+	bottom: 10px;
+	right: 10px;
+	color: white;
+	font-size: 12px;
+	text-align: right;
+	font-family: monospace;
+	pointer-events: none;
+}
+
+.footer a {
+	color: white;
+	text-decoration: none;
+}
