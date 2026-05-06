@@ -11,6 +11,6 @@ class BootScene extends Phaser.Scene {
 
     create() {
         this.scene.start('LevelScene');
-        this.scene.start('UIScene');
+        this.scene.launch('UIScene');
     }
 }
