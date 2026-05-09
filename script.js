@@ -29,9 +29,48 @@ const gamesList = document.getElementById("games-list");
 const gameFrame = document.getElementById("game-frame");
 const gameTitle = document.getElementById("game-title");
 const openNewTabBtn = document.getElementById("open-new-tab");
+const themeToggle = document.getElementById("theme-toggle");
+const themeIcon = document.querySelector(".theme-icon");
 
 let currentGamePath = "";
 
+// Theme management
+function initTheme() {
+  const savedTheme = localStorage.getItem("zenith-theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  
+  if (savedTheme) {
+    applyTheme(savedTheme === "light");
+  } else if (!prefersDark) {
+    applyTheme(true);
+  }
+  updateThemeIcon();
+}
+
+function applyTheme(isLight) {
+  const html = document.documentElement;
+  
+  if (isLight) {
+    html.classList.add("light-mode");
+    localStorage.setItem("zenith-theme", "light");
+  } else {
+    html.classList.remove("light-mode");
+    localStorage.setItem("zenith-theme", "dark");
+  }
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  const isLight = document.documentElement.classList.contains("light-mode");
+  themeIcon.textContent = isLight ? "☀️" : "🌙";
+}
+
+themeToggle.addEventListener("click", () => {
+  const isCurrentlyLight = document.documentElement.classList.contains("light-mode");
+  applyTheme(!isCurrentlyLight);
+});
+
+// Game selection
 function selectGame(game, button) {
   currentGamePath = game.path;
   gameFrame.src = game.path;
@@ -57,3 +96,6 @@ openNewTabBtn.addEventListener("click", () => {
   if (!currentGamePath) return;
   window.open(currentGamePath, "_blank");
 });
+
+// Initialize theme on page load
+initTheme();
