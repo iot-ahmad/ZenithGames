@@ -1,0 +1,6 @@
+{
+  "name": "Classic Two-Player Chess",
+  "description": "A simple, standard chessboard for two players to play locally.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

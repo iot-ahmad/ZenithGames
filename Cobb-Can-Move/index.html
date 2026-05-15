@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COBB CAN MOVE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- MENU OVERLAY -->
+        <div id="menu-overlay" class="overlay active">
+            <canvas id="menu-bg-canvas"></canvas>
+            <div class="menu-center">
+                <div class="menu-logo-area">
+                    <div class="logo-text">
+                        <span class="logo-line">COBB</span>
+                        <span class="logo-line">CAN</span>
+                        <span class="logo-line">MOVE</span>
+                    </div>
+                    <span class="version-tag">v1.3</span>
+                </div>
+                <div class="menu-scene">
+                    <canvas id="cobb-preview" width="200" height="160"></canvas>
+                </div>
+                <div class="menu-buttons">
+                    <button id="btn-continue" class="pixel-btn">
+                        <span class="btn-main">Continue</span>
+                        <span class="btn-sub">Level 1</span>
+                    </button>
+                    <button id="btn-endless" class="pixel-btn">
+                        <span class="btn-main">Endless</span>
+                    </button>
+                </div>
+                <div class="volume-row">
+                    <span>Volume</span>
+                    <input type="range" id="vol-slider" min="0" max="100" value="70">
+                </div>
+            </div>
+        </div>
+
+        <!-- RULES ANNOUNCEMENT -->
+        <div id="rules-overlay" class="overlay">
+            <div class="rules-box">
+                <div id="rules-title" class="rules-title"></div>
+                <div id="rules-list" class="rules-list"></div>
+                <div class="rules-hint">Press any key to begin...</div>
+            </div>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud" class="hud hidden">
+            <div class="hud-top-left">
+                <div id="hud-level">LEVEL 1</div>
+                <div id="hud-rules-mini"></div>
+            </div>
+            <div class="hud-top-right">
+                <div class="fuel-bar-wrapper">
+                    <div class="fuel-label">FURNACE</div>
+                    <div class="fuel-bar-bg">
+                        <div id="fuel-bar" class="fuel-bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="hud-bottom">
+                <div id="hud-prompt" class="prompt hidden"></div>
+                <div id="hud-coal" class="coal-counter hidden">COAL: <span id="coal-count">0</span></div>
+            </div>
+        </div>
+
+        <!-- GAME OVER -->
+        <div id="gameover-overlay" class="overlay">
+            <div class="gameover-box">
+                <div class="gameover-title">COBB GOT YOU</div>
+                <div class="gameover-sub" id="gameover-sub"></div>
+                <div class="gameover-buttons">
+                    <button id="btn-retry" class="pixel-btn"><span class="btn-main">Try Again</span></button>
+                    <button id="btn-menu" class="pixel-btn"><span class="btn-main">Menu</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL COMPLETE -->
+        <div id="levelcomplete-overlay" class="overlay">
+            <div class="levelcomplete-box">
+                <div class="levelcomplete-title">LEVEL COMPLETE</div>
+                <div class="levelcomplete-sub">The furnace burns bright... for now.</div>
+                <div class="levelcomplete-hint">Press any key to continue...</div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
