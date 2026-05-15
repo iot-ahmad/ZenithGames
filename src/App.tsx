@@ -40,6 +40,8 @@ const games = [
 function App() {
   const [currentGame, setCurrentGame] = useState<{title: string, path: string} | null>(null);
 
+  console.log("App rendering, current game:", currentGame?.title || "none");
+
   return (    
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <DottedSurface className="fixed inset-0 -z-10 h-full w-full opacity-50" />
