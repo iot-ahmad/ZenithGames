@@ -1,0 +1,212 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Dark palette extracted from logo */
+  --zenith-blue: #1a4fa9;
+  --zenith-blue-dark: #0a1f52;
+  --zenith-purple: #5b2f8d;
+  --zenith-red: #f0f0f0;
+  --zenith-bg: #070b14;
+  --zenith-surface: #0f1728;
+  --zenith-surface-2: #16223a;
+  --zenith-text: #e8efff;
+  --zenith-muted: #9eb0d7;
+  --zenith-border: #2b3f67;
+
+  /* Light palette extracted from logo (ready to use) */
+  --zenith-light-blue: #4d7dde;
+  --zenith-light-purple: #8b68cf;
+  --zenith-light-red: #ffffff;
+  --zenith-light-bg: #f4f7ff;
+  --zenith-light-surface: #ffffff;
+  --zenith-light-text: #1d2d50;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(26, 79, 169, 0.28), transparent 35%),
+    radial-gradient(circle at 85% 5%, rgba(198, 49, 73, 0.2), transparent 35%),
+    radial-gradient(circle at 50% 90%, rgba(91, 47, 141, 0.24), transparent 40%),
+    linear-gradient(180deg, #070b14 0%, #0c1220 100%);
+  color: var(--zenith-text);
+  min-height: 100vh;
+}
+
+.site-bg-game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  z-index: -3;
+  pointer-events: none;
+}
+
+.site-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: rgba(7, 11, 20, 0.48);
+  backdrop-filter: blur(1.5px);
+}
+
+.site-content {
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  text-align: center;
+  padding: 24px 16px 12px;
+}
+
+.brand-logo {
+  width: min(240px, 58vw);
+  height: auto;
+  display: block;
+  margin: 0 auto 14px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  mix-blend-mode: normal;
+  filter: none;
+}
+
+.header h1 {
+  margin: 0 0 6px;
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+  background: linear-gradient(50deg, #ffffff, #ffffff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.header p {
+  margin: 0;
+  color: var(--zenith-muted);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+.games-panel,
+.player-panel {
+  background: linear-gradient(180deg, var(--zenith-surface) 0%, var(--zenith-surface-2) 100%);
+  border: 1px solid var(--zenith-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.08);
+}
+
+.games-panel {
+  background: rgba(15, 23, 40, 0.52);
+  backdrop-filter: blur(6px);
+  padding: 14px;
+}
+
+.games-panel h2,
+.player-top h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+.games-list {
+  display: grid;
+  gap: 10px;
+}
+
+.game-btn {
+  width: 100%;
+  text-align: right;
+  border: 1px solid #334d7c;
+  background: rgba(12, 25, 45, 0.9);
+  color: var(--zenith-text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-btn:hover {
+  background: rgba(24, 45, 79, 0.95);
+  border-color: #4e78c5;
+  box-shadow: 0 6px 14px rgba(26, 79, 169, 0.25);
+}
+
+.game-btn.active {
+  border-color: #c63149;
+  background: linear-gradient(90deg, rgba(26, 79, 169, 0.9), rgba(91, 47, 141, 0.9));
+  color: #ffffff;
+}
+
+.game-btn:active {
+  transform: translateY(1px);
+}
+
+.player-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 75vh;
+}
+
+.player-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--zenith-border);
+  padding: 14px;
+}
+
+.player-top h2 {
+  margin: 0;
+}
+
+.secondary-btn {
+  border: 1px solid #3f63a8;
+  background: linear-gradient(90deg, #1a4fa9, #5b2f8d);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary-btn:not(:disabled):hover {
+  border-color: #c63149;
+}
+
+.game-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0 0 14px 14px;
+  background: #081124;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .games-panel {
+    order: 2;
+  }
+
+  .player-panel {
+    order: 1;
+    min-height: 60vh;
+  }
+}
