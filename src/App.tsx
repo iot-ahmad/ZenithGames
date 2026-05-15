@@ -73,7 +73,7 @@ function App() {
           <section className="w-full lg:w-2/3 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold">
-                {currentGame ? \`تلعب الآن: \${currentGame.title}\` : "اختَر لعبة من القائمة"}
+                {currentGame ? `تلعب الآن: ${currentGame.title}` : "اختَر لعبة من القائمة"}
               </h2>
               {currentGame && (
                 <a 
