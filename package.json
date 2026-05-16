@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm --prefix classic-two-player-chess install && npm --prefix classic-two-player-chess run build && npm --prefix gemini-runner install && npm --prefix gemini-runner run build && npm --prefix remix_-irbid-runner install && npm --prefix remix_-irbid-runner run build && vite build && node copy-assets.js",
+    "build": "vite build && node copy-assets.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
