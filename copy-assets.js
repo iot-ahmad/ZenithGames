@@ -29,7 +29,6 @@ const games = [
   "VR Sonic",
   "xo-game",
   "classic-two-player-chess",
-  "gemini-runner",
   "remix_-irbid-runner"
 ];
 

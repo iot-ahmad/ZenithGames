@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
-import { DottedSurface } from '@/components/ui/dotted-surface';
+import { WebGLShader } from '@/components/ui/webgl-shader';
 import { LiquidMetalButton } from '@/components/ui/liquid-metal-button';
 import { ExternalLink } from 'lucide-react';
 import './index.css';
@@ -34,7 +34,9 @@ const games = [
   // Newly added games
   { title: "Classic Two Player Chess", path: "./classic-two-player-chess/dist/index.html" },
   { title: "Gemini Runner", path: "./gemini-runner/dist/index.html" },
-  { title: "Irbid Runner", path: "./remix_-irbid-runner/dist/index.html" }
+  { title: "Irbid Runner", path: "./remix_-irbid-runner/dist/index.html" },
+  { title: "Voxel Architect", path: "./snake-game_tcw/voxel-toy-box/index.html" },
+  { title: "Multiplayer Neon Snake", path: "./spell-caster/multiplayer-neon-snake/index.html" }
 ];
 
 function App() {
@@ -44,7 +46,7 @@ function App() {
 
   return (    
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <DottedSurface className="fixed inset-0 -z-10 h-full w-full opacity-50" />
+      <WebGLShader />
       
       <div className="min-h-screen p-8 text-foreground" dir="rtl">
         <header className="mb-12 text-center">
