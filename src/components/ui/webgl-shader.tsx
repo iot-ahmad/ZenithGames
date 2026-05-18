@@ -13,6 +13,9 @@ export function WebGLShader() {
       return
     }
 
+    // Get WebGL lose context extension to cleanly dispose GPU resources on unmount
+    const glLoseContext = gl.getExtension("WEBGL_lose_context")
+
     const vertexShaderSource = `
       attribute vec2 position;
       void main() {
@@ -141,10 +144,14 @@ export function WebGLShader() {
       cancelAnimationFrame(animationId)
       window.removeEventListener("resize", resize)
       if (gl) {
-        gl.deleteBuffer(buffer)
-        gl.deleteProgram(program)
-        gl.deleteShader(vs)
-        gl.deleteShader(fs)
+        try { gl.deleteBuffer(buffer) } catch (e) {}
+        try { gl.deleteProgram(program) } catch (e) {}
+        try { gl.deleteShader(vs) } catch (e) {}
+        try { gl.deleteShader(fs) } catch (e) {}
+        // Force lose the WebGL context on unmount to completely free up GPU resources
+        if (glLoseContext) {
+          glLoseContext.loseContext()
+        }
       }
     }
   }, [])

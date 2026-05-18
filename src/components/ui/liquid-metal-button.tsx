@@ -76,10 +76,16 @@ export function LiquidMetalButton({
       document.head.appendChild(style);
     }
 
+    if (!isHovered) {
+      if (shaderMount.current?.destroy) {
+        shaderMount.current.destroy();
+        shaderMount.current = null;
+      }
+      return;
+    }
+
     const loadShader = async () => {
       try {
-        // static import used above
-
         if (shaderRef.current) {
           if (shaderMount.current?.destroy) {
             shaderMount.current.destroy();
@@ -102,7 +108,7 @@ export function LiquidMetalButton({
               u_offsetY: -0.1,
             },
             undefined,
-            0.6,
+            1.0,
           );
         }
       } catch (error) {
@@ -118,7 +124,7 @@ export function LiquidMetalButton({
         shaderMount.current = null;
       }
     };
-  }, []);
+  }, [isHovered]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -293,7 +299,10 @@ export function LiquidMetalButton({
                   width: `${dimensions.shaderWidth}px`,
                   maxWidth: `${dimensions.shaderWidth}px`,
                   height: `${dimensions.shaderHeight}px`,
-                  transition: "width 0.4s ease, height 0.4s ease",
+                  transition: "width 0.4s ease, height 0.4s ease, background 0.3s ease",
+                  background: isHovered 
+                    ? "transparent" 
+                    : "linear-gradient(90deg, #2e2e2e 0%, #141414 100%)", // sleek liquid metal dark silver background
                 }}
               />
             </div>
