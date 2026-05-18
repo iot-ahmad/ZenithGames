@@ -1,38 +1,26 @@
 import { useEffect, useRef } from "react"
-import * as THREE from "three"
 
 export function WebGLShader() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const sceneRef = useRef<{
-    scene: THREE.Scene | null
-    camera: THREE.OrthographicCamera | null
-    renderer: THREE.WebGLRenderer | null
-    mesh: THREE.Mesh | null
-    uniforms: Record<string, { value: number | number[] }>
-    animationId: number | null
-  }>({
-    scene: null,
-    camera: null,
-    renderer: null,
-    mesh: null,
-    uniforms: {},
-    animationId: null,
-  })
 
   useEffect(() => {
-    if (!canvasRef.current) return
-
     const canvas = canvasRef.current
-    const { current: refs } = sceneRef
+    if (!canvas) return
 
-    const vertexShader = `
-      attribute vec3 position;
+    const gl = canvas.getContext("webgl") || (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null)
+    if (!gl) {
+      console.warn("WebGL not supported in this browser.")
+      return
+    }
+
+    const vertexShaderSource = `
+      attribute vec2 position;
       void main() {
-        gl_Position = vec4(position, 1.0);
+        gl_Position = vec4(position, 0.0, 1.0);
       }
     `
 
-    const fragmentShader = `
+    const fragmentShaderSource = `
       precision highp float;
       uniform vec2 resolution;
       uniform float time;
@@ -57,86 +45,115 @@ export function WebGLShader() {
       }
     `
 
-    const initScene = () => {
-      refs.scene = new THREE.Scene()
-      refs.renderer = new THREE.WebGLRenderer({ canvas })
-      refs.renderer.setPixelRatio(window.devicePixelRatio)
-      refs.renderer.setClearColor(new THREE.Color(0x000000))
-
-      refs.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1)
-
-      refs.uniforms = {
-        resolution: { value: [window.innerWidth, window.innerHeight] },
-        time: { value: 0.0 },
-        xScale: { value: 1.0 },
-        yScale: { value: 0.5 },
-        distortion: { value: 0.05 },
+    function createShader(gl: WebGLRenderingContext, type: number, source: string) {
+      const shader = gl.createShader(type)
+      if (!shader) return null
+      gl.shaderSource(shader, source)
+      gl.compileShader(shader)
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error("Shader compile error:", gl.getShaderInfoLog(shader))
+        gl.deleteShader(shader)
+        return null
       }
-
-      const position = [
-        -1.0, -1.0, 0.0,
-         1.0, -1.0, 0.0,
-        -1.0,  1.0, 0.0,
-         1.0, -1.0, 0.0,
-        -1.0,  1.0, 0.0,
-         1.0,  1.0, 0.0,
-      ]
-
-      const positions = new THREE.BufferAttribute(new Float32Array(position), 3)
-      const geometry = new THREE.BufferGeometry()
-      geometry.setAttribute("position", positions)
-
-      const material = new THREE.RawShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        uniforms: refs.uniforms,
-        side: THREE.DoubleSide,
-      })
-
-      refs.mesh = new THREE.Mesh(geometry, material)
-      refs.scene.add(refs.mesh)
-
-      handleResize()
+      return shader
     }
 
-    const animate = () => {
-      if (refs.uniforms?.time) refs.uniforms.time.value = (refs.uniforms.time.value as number) + 0.01
-      if (refs.renderer && refs.scene && refs.camera) {
-        refs.renderer.render(refs.scene, refs.camera)
-      }
-      refs.animationId = requestAnimationFrame(animate)
+    const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
+    const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource)
+    if (!vs || !fs) return
+
+    const program = gl.createProgram()
+    if (!program) return
+    gl.attachShader(program, vs)
+    gl.attachShader(program, fs)
+    gl.linkProgram(program)
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error("Program link error:", gl.getProgramInfoLog(program))
+      return
     }
 
-    const handleResize = () => {
-      if (!refs.renderer || !refs.uniforms) return
+    // Vertices for a full screen quad
+    const vertices = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ])
+
+    const buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
+
+    const positionLoc = gl.getAttribLocation(program, "position")
+    gl.enableVertexAttribArray(positionLoc)
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0)
+
+    const resolutionLoc = gl.getUniformLocation(program, "resolution")
+    const timeLoc = gl.getUniformLocation(program, "time")
+    const xScaleLoc = gl.getUniformLocation(program, "xScale")
+    const yScaleLoc = gl.getUniformLocation(program, "yScale")
+    const distortionLoc = gl.getUniformLocation(program, "distortion")
+
+    let animationId: number
+    const startTime = performance.now()
+
+    function resize() {
+      if (!canvas || !gl) return
       const width = window.innerWidth
       const height = window.innerHeight
-      refs.renderer.setSize(width, height, false)
-      refs.uniforms.resolution.value = [width, height]
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width
+        canvas.height = height
+        gl.viewport(0, 0, width, height)
+      }
     }
 
-    initScene()
-    animate()
-    window.addEventListener("resize", handleResize)
+    function render() {
+      if (!gl || !program) return
+      
+      resize()
+
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+
+      gl.useProgram(program)
+
+      const elapsed = (performance.now() - startTime) * 0.001
+      
+      gl.uniform2f(resolutionLoc, canvas.width, canvas.height)
+      gl.uniform1f(timeLoc, elapsed)
+      gl.uniform1f(xScaleLoc, 1.0)
+      gl.uniform1f(yScaleLoc, 0.5)
+      gl.uniform1f(distortionLoc, 0.05)
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+      animationId = requestAnimationFrame(render)
+    }
+
+    render()
+
+    window.addEventListener("resize", resize)
 
     return () => {
-      if (refs.animationId) cancelAnimationFrame(refs.animationId)
-      window.removeEventListener("resize", handleResize)
-      if (refs.mesh) {
-        refs.scene?.remove(refs.mesh)
-        refs.mesh.geometry.dispose()
-        if (refs.mesh.material instanceof THREE.Material) {
-          refs.mesh.material.dispose()
-        }
+      cancelAnimationFrame(animationId)
+      window.removeEventListener("resize", resize)
+      if (gl) {
+        gl.deleteBuffer(buffer)
+        gl.deleteProgram(program)
+        gl.deleteShader(vs)
+        gl.deleteShader(fs)
       }
-      refs.renderer?.dispose()
     }
   }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed top-0 left-0 w-full h-full block -z-10"
+      className="fixed top-0 left-0 w-full h-full block"
+      style={{ zIndex: -1, opacity: 0.6, pointerEvents: 'none' }}
     />
   )
 }
