@@ -42,7 +42,10 @@ if (!fs.existsSync('dist')) {
 // Copy game directories
 games.forEach(dir => {
   if (fs.existsSync(dir)) {
-    fs.cpSync(dir, path.join('dist', dir), { recursive: true });
+    fs.cpSync(dir, path.join('dist', dir), { 
+      recursive: true, 
+      filter: (src) => !src.includes('node_modules') 
+    });
     console.log(`Copied ${dir}`);
   } else {
     console.warn(`Warning: Could not find directory ${dir}`);
